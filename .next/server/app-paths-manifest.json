@@ -1,0 +1,8 @@
+{
+  "/community/page": "app/community/page.js",
+  "/(auth)/login/page": "app/(auth)/login/page.js",
+  "/projects/[id]/page": "app/projects/[id]/page.js",
+  "/projects/new/page": "app/projects/new/page.js",
+  "/api/community/route": "app/api/community/route.js",
+  "/dashboard/page": "app/dashboard/page.js"
+}

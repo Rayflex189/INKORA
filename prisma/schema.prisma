@@ -1,0 +1,444 @@
+datasource db {
+  provider = "sqlite"
+  url      = "file:./dev.db"
+}
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+model User {
+  id           String   @id @default(uuid())
+  email        String   @unique
+  username     String   @unique
+  name         String
+  passwordHash String
+  avatar       String?
+  bio          String?
+  genres       String?  // comma separated or JSON string
+  interests    String?  // comma separated
+  role         String   @default("USER") // USER, ADMIN
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  profile             Profile?
+  projects            Project[]             @relation("ProjectOwner")
+  projectMemberships  ProjectMember[]
+  sentInvites         ProjectInvite[]       @relation("Inviter")
+  collaborationReqs   ProjectRequest[]
+  draftVersions       DraftVersion[]
+  writingGoals        WritingGoal[]
+  writingSessions     WritingSession[]
+  comments            Comment[]
+  assignedTasks       ProjectTask[]         @relation("AssignedUser")
+  conversationMembers ConversationMember[]
+  sentMessages        Message[]
+  activityLogs        ActivityLog[]
+  bookInteractions    BookInteraction[]
+  followers           Follower[]            @relation("Following")
+  following           Follower[]            @relation("Follower")
+  ownedTeams          Team[]                @relation("TeamOwner")
+  teamMemberships     TeamMember[]
+}
+
+model Profile {
+  id                 String  @id @default(uuid())
+  userId             String  @unique
+  publicVisibility   String  @default("PUBLIC") // PUBLIC, COMMUNITY, PRIVATE
+  allowMessages      Boolean @default(true)
+  allowInvites       Boolean @default(true)
+  allowCollaboration Boolean @default(true)
+  user               User    @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+model Project {
+  id                String   @id @default(uuid())
+  title             String
+  subtitle          String?
+  authorName        String
+  ownerId           String
+  category          String   // Books, Creative Writing, Screen & Stage, Professional Writing, Academic, Other
+  type              String   // Novel, Short Story, Poetry, Screenplay, Memoir, Essay, etc.
+  genre             String?
+  subgenre          String?
+  targetAudience    String?
+  ageGroup          String?
+  wordCountTarget   Int      @default(50000)
+  currentWordCount  Int      @default(0)
+  status            String   @default("IN_PROGRESS") // DRAFT, IN_PROGRESS, COMPLETED, ARCHIVED
+  visibility        String   @default("PRIVATE") // PRIVATE, INVITE_ONLY, OPEN
+  allowCollaborators Boolean @default(false)
+  maxCollaborators  Int      @default(5)
+  coverImage        String?
+  premise           String?
+  logline           String?
+  concept           String?
+  theme             String?
+  tone              String?
+  structureTemplate String   @default("Three Act Structure")
+  createdAt         DateTime @default(now())
+  updatedAt         DateTime @updatedAt
+
+  owner               User                @relation("ProjectOwner", fields: [ownerId], references: [id], onDelete: Cascade)
+  members             ProjectMember[]
+  invites             ProjectInvite[]
+  requests            ProjectRequest[]
+  chapters            Chapter[]
+  characters          Character[]
+  locations           Location[]
+  timelineEvents      TimelineEvent[]
+  researchFolders     ResearchFolder[]
+  researchItems       ResearchItem[]
+  notes               Note[]
+  draftVersions       DraftVersion[]
+  writingGoals        WritingGoal[]
+  writingSessions     WritingSession[]
+  comments            Comment[]
+  tasks               ProjectTask[]
+  activityLogs        ActivityLog[]
+  galleryItem         BookGalleryItem?
+  conversations       Conversation[]
+}
+
+model ProjectMember {
+  id        String   @id @default(uuid())
+  projectId String
+  userId    String
+  role      String   @default("CO_AUTHOR") // OWNER, CO_AUTHOR, EDITOR, CONTRIBUTOR, REVIEWER, VIEWER
+  joinedAt  DateTime @default(now())
+
+  project Project @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  user    User    @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([projectId, userId])
+}
+
+model ProjectInvite {
+  id        String   @id @default(uuid())
+  projectId String
+  inviterId String
+  email     String?
+  username  String?
+  token     String   @unique
+  role      String   @default("CO_AUTHOR")
+  status    String   @default("PENDING") // PENDING, ACCEPTED, DECLINED, EXPIRED
+  expiresAt DateTime
+  createdAt DateTime @default(now())
+
+  project Project @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  inviter User    @relation("Inviter", fields: [inviterId], references: [id], onDelete: Cascade)
+}
+
+model ProjectRequest {
+  id        String   @id @default(uuid())
+  projectId String
+  userId    String
+  message   String?
+  status    String   @default("PENDING") // PENDING, ACCEPTED, DECLINED
+  createdAt DateTime @default(now())
+
+  project Project @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  user    User    @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+model Chapter {
+  id         String   @id @default(uuid())
+  projectId  String
+  title      String
+  objective  String?
+  summary    String?
+  orderIndex Int      @default(0)
+  content    String   @default("")
+  wordCount  Int      @default(0)
+  location   String?
+  timeline   String?
+  status     String   @default("IN_PROGRESS") // NOT_STARTED, IN_PROGRESS, REVISION, COMPLETED
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+
+  project Project        @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  drafts  DraftVersion[]
+  comments Comment[]
+  tasks   ProjectTask[]
+}
+
+model Character {
+  id           String   @id @default(uuid())
+  projectId    String
+  name         String
+  age          String?
+  role         String?  // Protagonist, Antagonist, Supporting, Mentor
+  appearance   String?
+  personality  String?
+  background   String?
+  arc          String?
+  strengths    String?
+  weaknesses   String?
+  goals        String?
+  motivations  String?
+  fears        String?
+  secrets      String?
+  relationships String?
+  createdAt    DateTime @default(now())
+
+  project Project @relation(fields: [projectId], references: [id], onDelete: Cascade)
+}
+
+model Location {
+  id           String   @id @default(uuid())
+  projectId    String
+  name         String
+  description  String?
+  significance String?
+  history      String?
+  rules        String?
+  createdAt    DateTime @default(now())
+
+  project Project @relation(fields: [projectId], references: [id], onDelete: Cascade)
+}
+
+model TimelineEvent {
+  id                 String   @id @default(uuid())
+  projectId          String
+  title              String
+  description        String?
+  dateString         String?
+  orderIndex         Int      @default(0)
+  locationId         String?
+  charactersInvolved String?
+  createdAt          DateTime @default(now())
+
+  project Project @relation(fields: [projectId], references: [id], onDelete: Cascade)
+}
+
+model ResearchFolder {
+  id        String   @id @default(uuid())
+  projectId String
+  name      String
+  createdAt DateTime @default(now())
+
+  project Project        @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  items   ResearchItem[]
+}
+
+model ResearchItem {
+  id        String   @id @default(uuid())
+  projectId String
+  folderId  String?
+  title     String
+  content   String
+  url       String?
+  category  String   @default("NOTE") // NOTE, SOURCE, QUOTE, REFERENCE
+  createdAt DateTime @default(now())
+
+  project Project         @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  folder  ResearchFolder? @relation(fields: [folderId], references: [id], onDelete: SetNull)
+}
+
+model Note {
+  id        String   @id @default(uuid())
+  projectId String
+  title     String
+  content   String
+  tags      String?
+  color     String?  @default("amber")
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  project Project @relation(fields: [projectId], references: [id], onDelete: Cascade)
+}
+
+model DraftVersion {
+  id            String   @id @default(uuid())
+  projectId     String
+  chapterId     String?
+  title         String
+  content       String
+  changeSummary String?
+  authorId      String
+  createdAt     DateTime @default(now())
+
+  project Project  @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  chapter Chapter? @relation(fields: [chapterId], references: [id], onDelete: Cascade)
+  author  User     @relation(fields: [authorId], references: [id], onDelete: Cascade)
+}
+
+model WritingGoal {
+  id           String   @id @default(uuid())
+  userId       String
+  projectId    String?
+  date         String   // YYYY-MM-DD
+  targetWords  Int      @default(2000)
+  writtenWords Int      @default(0)
+  createdAt    DateTime @default(now())
+
+  user    User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  project Project? @relation(fields: [projectId], references: [id], onDelete: Cascade)
+}
+
+model WritingSession {
+  id              String   @id @default(uuid())
+  userId          String
+  projectId       String
+  date            String
+  durationMinutes Int      @default(0)
+  wordsAdded      Int      @default(0)
+  createdAt       DateTime @default(now())
+
+  user    User    @relation(fields: [userId], references: [id], onDelete: Cascade)
+  project Project @relation(fields: [projectId], references: [id], onDelete: Cascade)
+}
+
+model Comment {
+  id           String   @id @default(uuid())
+  projectId    String
+  chapterId    String
+  userId       String
+  selectedText String?
+  text         String
+  resolved     Boolean  @default(false)
+  createdAt    DateTime @default(now())
+
+  project Project @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  chapter Chapter @relation(fields: [chapterId], references: [id], onDelete: Cascade)
+  user    User    @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+model ProjectTask {
+  id           String    @id @default(uuid())
+  projectId    String
+  chapterId    String?
+  assignedToId String?
+  title        String
+  description  String?
+  status       String    @default("NOT_STARTED") // NOT_STARTED, IN_PROGRESS, REVIEW, COMPLETED
+  dueDate      DateTime?
+  createdAt    DateTime  @default(now())
+
+  project    Project  @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  chapter    Chapter? @relation(fields: [chapterId], references: [id], onDelete: SetNull)
+  assignedTo User?    @relation("AssignedUser", fields: [assignedToId], references: [id], onDelete: SetNull)
+}
+
+model Conversation {
+  id        String   @id @default(uuid())
+  name      String?
+  type      String   @default("DIRECT") // DIRECT, PROJECT_TEAM
+  projectId String?
+  createdAt DateTime @default(now())
+
+  project  Project?             @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  members  ConversationMember[]
+  messages Message[]
+}
+
+model ConversationMember {
+  id             String   @id @default(uuid())
+  conversationId String
+  userId         String
+  joinedAt       DateTime @default(now())
+
+  conversation Conversation @relation(fields: [conversationId], references: [id], onDelete: Cascade)
+  user         User         @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([conversationId, userId])
+}
+
+model Message {
+  id             String   @id @default(uuid())
+  conversationId String
+  senderId       String
+  text           String
+  attachments    String?  // JSON string
+  createdAt      DateTime @default(now())
+
+  conversation Conversation @relation(fields: [conversationId], references: [id], onDelete: Cascade)
+  sender       User         @relation(fields: [senderId], references: [id], onDelete: Cascade)
+}
+
+model ActivityLog {
+  id        String   @id @default(uuid())
+  projectId String
+  userId    String
+  action    String
+  details   String?
+  createdAt DateTime @default(now())
+
+  project Project @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  user    User    @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+model BookGalleryItem {
+  id          String    @id @default(uuid())
+  projectId   String    @unique
+  coverImage  String?
+  title       String
+  subtitle    String?
+  author      String
+  description String
+  genre       String
+  tags        String?
+  visibility  String    @default("PUBLIC") // PUBLIC, UNLISTED
+  isFeatured  Boolean   @default(false)
+  likesCount  Int       @default(0)
+  viewsCount  Int       @default(0)
+  publishedAt DateTime  @default(now())
+
+  project      Project           @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  interactions BookInteraction[]
+}
+
+model BookInteraction {
+  id        String   @id @default(uuid())
+  bookId    String
+  userId    String
+  type      String   // LIKE, BOOKMARK, REVIEW
+  content   String?
+  rating    Int?
+  createdAt DateTime @default(now())
+
+  book BookGalleryItem @relation(fields: [bookId], references: [id], onDelete: Cascade)
+  user User            @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+model Follower {
+  id          String   @id @default(uuid())
+  followerId  String
+  followingId String
+  createdAt   DateTime @default(now())
+
+  follower  User @relation("Follower", fields: [followerId], references: [id], onDelete: Cascade)
+  following User @relation("Following", fields: [followingId], references: [id], onDelete: Cascade)
+
+  @@unique([followerId, followingId])
+}
+
+model Team {
+  id          String   @id @default(uuid())
+  name        String
+  logo        String?
+  description String?
+  ownerId     String
+  createdAt   DateTime @default(now())
+
+  owner   User         @relation("TeamOwner", fields: [ownerId], references: [id], onDelete: Cascade)
+  members TeamMember[]
+}
+
+model TeamMember {
+  id     String @id @default(uuid())
+  teamId String
+  userId String
+  role   String @default("MEMBER") // OWNER, MEMBER
+
+  team Team @relation(fields: [teamId], references: [id], onDelete: Cascade)
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([teamId, userId])
+}
+
+model AdminConfig {
+  id    String @id @default(uuid())
+  key   String @unique
+  value String
+}

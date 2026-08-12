@@ -1,0 +1,151 @@
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500&family=Playfair+Display:ital,wght@0,400;0,600;0,700;1,400&display=swap');
+
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  --background: #f8fafc;
+  --foreground: #0f172a;
+  --card: #ffffff;
+  --card-foreground: #0f172a;
+  --primary: #4f46e5;
+  --primary-hover: #4338ca;
+  --accent: #f59e0b;
+  --muted: #f1f5f9;
+  --muted-foreground: #64748b;
+  --border: #e2e8f0;
+  --sidebar: #ffffff;
+  --sidebar-foreground: #1e293b;
+  --font-sans: 'Inter', sans-serif;
+  --font-serif: 'Playfair Display', Georgia, serif;
+  --font-mono: 'JetBrains Mono', monospace;
+}
+
+.dark {
+  --background: #090d16;
+  --foreground: #f1f5f9;
+  --card: #111827;
+  --card-foreground: #f8fafc;
+  --primary: #6366f1;
+  --primary-hover: #4f46e5;
+  --accent: #fbbf24;
+  --muted: #1e293b;
+  --muted-foreground: #94a3b8;
+  --border: #1f293d;
+  --sidebar: #0f172a;
+  --sidebar-foreground: #e2e8f0;
+}
+
+body {
+  background-color: var(--background);
+  color: var(--foreground);
+  font-family: var(--font-sans);
+  overflow-x: hidden;
+  transition: background-color 0.2s ease, color 0.2s ease;
+}
+
+/* Glassmorphism utility */
+.glass-panel {
+  background: rgba(255, 255, 255, 0.75);
+  backdrop-filter: blur(12px);
+  border: 1px solid var(--border);
+}
+.dark .glass-panel {
+  background: rgba(17, 24, 39, 0.75);
+  backdrop-filter: blur(12px);
+  border: 1px solid var(--border);
+}
+
+/* Custom Scrollbar */
+::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+::-webkit-scrollbar-thumb {
+  background: rgba(148, 163, 184, 0.3);
+  border-radius: 9999px;
+}
+::-webkit-scrollbar-thumb:hover {
+  background: rgba(148, 163, 184, 0.5);
+}
+
+/* TipTap Manuscript Editor Styles */
+.ProseMirror {
+  outline: none;
+  min-height: 500px;
+  font-family: var(--font-serif);
+  font-size: 1.125rem;
+  line-height: 1.85;
+  color: var(--foreground);
+}
+
+.ProseMirror p {
+  margin-bottom: 1.25em;
+  text-indent: 1.5em;
+}
+
+.ProseMirror p:first-of-type,
+.ProseMirror h1 + p,
+.ProseMirror h2 + p,
+.ProseMirror h3 + p {
+  text-indent: 0;
+}
+
+.ProseMirror h1 {
+  font-family: var(--font-serif);
+  font-size: 2.25rem;
+  font-weight: 700;
+  margin-top: 2rem;
+  margin-bottom: 1rem;
+  line-height: 1.25;
+  letter-spacing: -0.025em;
+  color: var(--foreground);
+}
+
+.ProseMirror h2 {
+  font-family: var(--font-serif);
+  font-size: 1.75rem;
+  font-weight: 600;
+  margin-top: 1.75rem;
+  margin-bottom: 0.75rem;
+}
+
+.ProseMirror h3 {
+  font-family: var(--font-sans);
+  font-size: 1.25rem;
+  font-weight: 600;
+  margin-top: 1.5rem;
+  margin-bottom: 0.5rem;
+}
+
+.ProseMirror blockquote {
+  border-left: 4px solid var(--primary);
+  padding-left: 1.25rem;
+  font-style: italic;
+  color: var(--muted-foreground);
+  margin: 1.5rem 0;
+}
+
+.ProseMirror hr {
+  border: 0;
+  text-align: center;
+  margin: 2.5rem 0;
+}
+.ProseMirror hr::after {
+  content: "✦ ✦ ✦";
+  letter-spacing: 0.75rem;
+  color: var(--muted-foreground);
+}
+
+.ProseMirror p.is-editor-empty:first-child::before {
+  color: var(--muted-foreground);
+  content: attr(data-placeholder);
+  float: left;
+  height: 0;
+  pointer-events: none;
+  font-style: italic;
+}
