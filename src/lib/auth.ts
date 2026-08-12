@@ -3,7 +3,7 @@ import jwt from "jsonwebtoken";
 import { cookies } from "next/headers";
 import { db } from "./db";
 
-const JWT_SECRET = process.env.JWT_SECRET || "inkora-secret-key-super-secure-jwt";
+const JWT_SECRET = process.env.JWT_SECRET || process.env.AUTH_SECRET || "inkora-secret-key-super-secure-jwt";
 
 export interface SessionUser {
   id: string;
