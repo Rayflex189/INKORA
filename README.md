@@ -1,0 +1,2 @@
+# INKORA
+Dynamic Writing app
