@@ -36,6 +36,11 @@ export function Header({ user }: HeaderProps) {
   const { theme, setTheme } = useTheme();
   const [showProfileMenu, setShowProfileMenu] = useState(false);
   const [showThemeMenu, setShowThemeMenu] = useState(false);
+  const [mounted, setMounted] = useState(false);
+
+  React.useEffect(() => {
+    setMounted(true);
+  }, []);
 
   const handleLogout = async () => {
     await fetch("/api/auth/logout", { method: "POST" });
@@ -43,15 +48,28 @@ export function Header({ user }: HeaderProps) {
     router.refresh();
   };
 
-  const navLinks = [
-    { href: "/dashboard", label: "Workspace", icon: BookOpen },
-    { href: "/projects/new", label: "Create", icon: PlusCircle },
-    { href: "/gallery", label: "Book Gallery", icon: Compass },
+  const publicLinks = [
+    { href: "/books", label: "Library", icon: Compass },
+    { href: "/gallery", label: "Showcase", icon: BookOpen },
     { href: "/community", label: "Community", icon: Users },
   ];
 
+  const authLinks = [
+    { href: "/dashboard", label: "Workspace", icon: BookOpen },
+    { href: "/projects/new", label: "Create", icon: PlusCircle },
+  ];
+
+  const activeNavLinks = user
+    ? [
+        { href: "/dashboard", label: "Workspace", icon: BookOpen },
+        { href: "/projects/new", label: "Create", icon: PlusCircle },
+        { href: "/books", label: "Library", icon: Compass },
+        { href: "/community", label: "Community", icon: Users },
+      ]
+    : publicLinks;
+
   if (user?.role === "ADMIN") {
-    navLinks.push({ href: "/admin", label: "Admin", icon: Shield });
+    activeNavLinks.push({ href: "/admin", label: "Admin", icon: Shield });
   }
 
   return (
@@ -69,28 +87,26 @@ export function Header({ user }: HeaderProps) {
           </Link>
 
           {/* Navigation Links */}
-          {user && (
-            <nav className="hidden md:flex items-center gap-1">
-              {navLinks.map((link) => {
-                const Icon = link.icon;
-                const isActive = pathname.startsWith(link.href);
-                return (
-                  <Link
-                    key={link.href}
-                    href={link.href}
-                    className={`flex items-center gap-2 px-3.5 py-2 rounded-lg text-sm font-medium transition-colors ${
-                      isActive
-                        ? "bg-primary/10 text-primary"
-                        : "text-muted-foreground hover:bg-muted hover:text-foreground"
-                    }`}
-                  >
-                    <Icon className="h-4 w-4" />
-                    <span>{link.label}</span>
-                  </Link>
-                );
-              })}
-            </nav>
-          )}
+          <nav className="hidden md:flex items-center gap-1">
+            {activeNavLinks.map((link) => {
+              const Icon = link.icon;
+              const isActive = pathname === link.href || (link.href !== "/" && pathname.startsWith(link.href));
+              return (
+                <Link
+                  key={link.href}
+                  href={link.href}
+                  className={`flex items-center gap-2 px-3.5 py-2 rounded-lg text-sm font-medium transition-colors ${
+                    isActive
+                      ? "bg-primary/10 text-primary"
+                      : "text-muted-foreground hover:bg-muted hover:text-foreground"
+                  }`}
+                >
+                  <Icon className="h-4 w-4" />
+                  <span>{link.label}</span>
+                </Link>
+              );
+            })}
+          </nav>
         </div>
 
         {/* Right Action Tools */}
@@ -102,9 +118,15 @@ export function Header({ user }: HeaderProps) {
               className="flex h-9 w-9 items-center justify-center rounded-lg border border-border bg-card hover:bg-muted text-muted-foreground hover:text-foreground transition-colors"
               title="Switch Theme"
             >
-              {theme === "light" && <Sun className="h-4 w-4 text-amber-500" />}
-              {theme === "dark" && <Moon className="h-4 w-4 text-indigo-400" />}
-              {theme === "system" && <Laptop className="h-4 w-4" />}
+              {mounted ? (
+                <>
+                  {theme === "light" && <Sun className="h-4 w-4 text-amber-500" />}
+                  {theme === "dark" && <Moon className="h-4 w-4 text-indigo-400" />}
+                  {theme === "system" && <Laptop className="h-4 w-4" />}
+                </>
+              ) : (
+                <Sun className="h-4 w-4 text-amber-500" />
+              )}
             </button>
 
             {showThemeMenu && (

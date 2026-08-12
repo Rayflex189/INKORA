@@ -1,0 +1,16 @@
+services:
+  postgres:
+    image: postgres:17-alpine
+    container_name: inkora-postgres
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: inkora
+      POSTGRES_PASSWORD: inkora_dev_password
+      POSTGRES_DB: inkora
+    ports:
+      - "5432:5432"
+    volumes:
+      - inkora_postgres_data:/var/lib/postgresql/data
+
+volumes:
+  inkora_postgres_data:

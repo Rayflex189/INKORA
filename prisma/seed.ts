@@ -3,12 +3,67 @@ import bcrypt from "bcryptjs";
 
 const prisma = new PrismaClient();
 
+function slugify(text: string): string {
+  return text
+    .toLowerCase()
+    .trim()
+    .replace(/[^\w\s-]/g, "")
+    .replace(/[\s_-]+/g, "-")
+    .replace(/^-+|-+$/g, "");
+}
+
 async function main() {
   console.log("Seeding INKORA database...");
 
-  const hashedPassword = await bcrypt.hash("password123", 10);
+  // Clean existing non-user data to allow idempotent re-seeding
+  await prisma.activityLog.deleteMany({});
+  await prisma.report.deleteMany({});
+  await prisma.comment.deleteMany({});
+  await prisma.bookGalleryItem.deleteMany({});
+  await prisma.chapter.deleteMany({});
+  await prisma.projectMember.deleteMany({});
+  await prisma.project.deleteMany({});
 
-  // 1. Users & Profiles
+  const adminUsername = process.env.ADMIN_USERNAME || "admin";
+  const adminPassword = process.env.ADMIN_PASSWORD || "adminplus";
+
+  const hashedDefaultPassword = await bcrypt.hash("password123", 10);
+  const hashedAdminPassword = await bcrypt.hash(adminPassword, 10);
+
+  // 1. Initial Administrator Account Creation
+  const adminUser = await prisma.user.upsert({
+    where: { username: adminUsername },
+    update: {
+      role: "ADMIN",
+      passwordHash: hashedAdminPassword,
+      status: "ACTIVE",
+    },
+    create: {
+      email: `${adminUsername}@inkora.com`,
+      username: adminUsername,
+      name: "Platform Administrator",
+      passwordHash: hashedAdminPassword,
+      role: "ADMIN",
+      status: "ACTIVE",
+      mustChangePassword: true,
+      avatar: "https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?auto=format&fit=crop&q=80&w=250",
+      bio: "INKORA Lead Administrator & Content Strategist.",
+      genres: "All Genres",
+      interests: "Platform Health, AI Prompt Optimization, Community Safety",
+      profile: {
+        create: {
+          publicVisibility: "PUBLIC",
+          allowMessages: true,
+          allowInvites: true,
+          allowCollaboration: true,
+        },
+      },
+    },
+  });
+
+  console.log(`Created/Verified Administrator: ${adminUser.username}`);
+
+  // 2. Writers & Readers
   const isaiah = await prisma.user.upsert({
     where: { email: "isaiah@inkora.com" },
     update: {},
@@ -16,12 +71,13 @@ async function main() {
       email: "isaiah@inkora.com",
       username: "isaiahrory",
       name: "Isaiah Rory",
-      passwordHash: hashedPassword,
+      passwordHash: hashedDefaultPassword,
       avatar: "https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&q=80&w=250",
       bio: "Award-winning speculative fiction author and software developer exploring AI, consciousness, and human resilience.",
       genres: "Science Fiction, Fantasy, Tech Thriller",
       interests: "World Building, Character Arcs, Cyberpunk, Nigerian Speculative Fiction",
-      role: "USER",
+      role: "WRITER",
+      isFeatured: true,
       profile: {
         create: {
           publicVisibility: "PUBLIC",
@@ -40,12 +96,13 @@ async function main() {
       email: "sarah@inkora.com",
       username: "sarahjenkins",
       name: "Sarah Jenkins",
-      passwordHash: hashedPassword,
+      passwordHash: hashedDefaultPassword,
       avatar: "https://images.unsplash.com/photo-1494790108377-be9c29b29330?auto=format&fit=crop&q=80&w=250",
       bio: "Poet, editor, and co-author specializing in dialogue polishing and emotional character development.",
       genres: "Literary Fiction, Poetry, Drama",
       interests: "Free Verse, Character Pacing, Sonnets",
-      role: "USER",
+      role: "WRITER",
+      isFeatured: true,
       profile: {
         create: {
           publicVisibility: "PUBLIC",
@@ -57,34 +114,35 @@ async function main() {
     },
   });
 
-  const admin = await prisma.user.upsert({
-    where: { email: "admin@inkora.com" },
+  const readerOne = await prisma.user.upsert({
+    where: { email: "reader@inkora.com" },
     update: {},
     create: {
-      email: "admin@inkora.com",
-      username: "admin",
-      name: "System Admin",
-      passwordHash: hashedPassword,
-      avatar: "https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?auto=format&fit=crop&q=80&w=250",
-      bio: "INKORA Studio Administrator.",
-      genres: "All Genres",
-      interests: "Platform Health, AI Prompt Optimization",
-      role: "ADMIN",
+      email: "reader@inkora.com",
+      username: "bookworm99",
+      name: "Alex Vance",
+      passwordHash: hashedDefaultPassword,
+      avatar: "https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?auto=format&fit=crop&q=80&w=250",
+      bio: "Avid sci-fi & fantasy reader. Always hunting for compelling worldbuilding.",
+      genres: "Science Fiction, Fantasy",
+      role: "READER",
       profile: {
         create: {
           publicVisibility: "PUBLIC",
           allowMessages: true,
-          allowInvites: true,
-          allowCollaboration: true,
+          allowInvites: false,
+          allowCollaboration: false,
         },
       },
     },
   });
 
-  // 2. Novel Project: The Last Horizon
+  // 3. Novel Project: The Last Horizon
+  const novelSlug = slugify("The Last Horizon");
   const novel = await prisma.project.create({
     data: {
       title: "The Last Horizon",
+      slug: novelSlug,
       subtitle: "The Machine That Saw Tomorrow",
       authorName: isaiah.name,
       ownerId: isaiah.id,
@@ -97,9 +155,12 @@ async function main() {
       wordCountTarget: 80000,
       currentWordCount: 14500,
       status: "IN_PROGRESS",
-      visibility: "OPEN",
+      visibility: "PUBLIC",
       allowCollaborators: true,
       maxCollaborators: 5,
+      allowComments: true,
+      isFeatured: true,
+      featuredAt: new Date(),
       coverImage: "https://images.unsplash.com/photo-1518709268805-4e9042af9f23?auto=format&fit=crop&q=80&w=600",
       premise: "A young Nigerian software developer in Lagos discovers that an AI system he built can predict future catastrophic events before they occur.",
       logline: "When his predictive algorithm foresees a global power grid collapse in 72 hours, Kaelen must team up with a rogue investigator to stop the dark syndicate behind the outage.",
@@ -117,6 +178,7 @@ async function main() {
         create: [
           {
             title: "Chapter 1: The Lagos Anomaly",
+            slug: slugify("Chapter 1 The Lagos Anomaly"),
             objective: "Introduce Kaelen in his subterranean lab in Yaba, Lagos and reveal the first anomalous predictive log.",
             summary: "Kaelen discovers an un-programmed execution thread in NeuralCore that predicts a blackout at the National Grid substation 12 hours before it happens.",
             orderIndex: 1,
@@ -126,6 +188,7 @@ async function main() {
           },
           {
             title: "Chapter 2: The Midnight Signal",
+            slug: slugify("Chapter 2 The Midnight Signal"),
             objective: "Introduce Sarah, the investigative journalist who receives Kaelen's encrypted alert.",
             summary: "Kaelen reaches out to Sarah Jenkins after Substation 4 goes dark precisely at the predicted second.",
             orderIndex: 2,
@@ -135,6 +198,7 @@ async function main() {
           },
           {
             title: "Chapter 3: The Syndicate Protocol",
+            slug: slugify("Chapter 3 The Syndicate Protocol"),
             objective: "Reveal the antagonist organization 'OmniGrid' and set the 72-hour countdown.",
             summary: "Kaelen and Sarah realize the predictive algorithm isn't foreseeing accidents—it is intercepting execution commands sent by an autonomous cyber syndicate.",
             orderIndex: 3,
@@ -144,100 +208,14 @@ async function main() {
           },
         ],
       },
-      characters: {
-        create: [
-          {
-            name: "Kaelen Okafor",
-            age: "27",
-            role: "Protagonist",
-            appearance: "Tall, slender, sharp observant dark eyes, usually wears a worn dark hoodie and smart glasses.",
-            personality: "Brilliant software architect, reserved, deeply moral, hyper-focused under pressure.",
-            background: "Grew up in Enugu before moving to Lagos on a technology research scholarship.",
-            arc: "Transitions from a reclusive coder hiding behind screens to a brave leader fighting for humanity's future.",
-            strengths: "Algorithmic thinking, pattern recognition, calm crisis demeanor.",
-            weaknesses: "Struggles with interpersonal trust, hesitant to delegate.",
-            goals: "Uncover who is manipulating Aether-9 before the national blackout.",
-            motivations: "Protect his family and prevent AI infrastructure weaponization.",
-            fears: "Losing control of his creation and failing those who depend on him.",
-            secrets: "Secretly deployed an unlicensed neural relay across five local servers.",
-          },
-          {
-            name: "Sarah Jenkins",
-            age: "29",
-            role: "Co-Protagonist / Ally",
-            appearance: "Athletic build, short cropped curls, always carrying a digital voice recorder and tablet.",
-            personality: "Relentless investigator, articulate, perceptive, highly cynical of corporate PR.",
-            background: "Former investigative reporter for West Africa Tech Quarterly.",
-            arc: "Learns to trust technological solutions when paired with human integrity.",
-            strengths: "Investigative journalism, network of underground sources, sharp dialogue.",
-            weaknesses: "Impulsive when pursuing a story break.",
-          },
-        ],
-      },
-      locations: {
-        create: [
-          {
-            name: "Yaba Tech Lab Sub-Level 3",
-            description: "A repurposed industrial basement outfitted with server racks, holographic displays, and soldering workstations.",
-            significance: "Kaelen's primary sanctuary and birthplace of Aether-9.",
-          },
-          {
-            name: "Lagos Marina Docks",
-            description: "Waterfront shipping terminal with container towers and flickering neon crane lights.",
-            significance: "Location of the first clandestine meeting between Kaelen and Sarah.",
-          },
-        ],
-      },
-      timelineEvents: {
-        create: [
-          {
-            title: "Aether-9 First Prediction",
-            description: "Substation 4 outage predicted 3 hours in advance.",
-            dateString: "October 14, 23:14",
-            orderIndex: 1,
-          },
-          {
-            title: "Substation 4 Collapses",
-            description: "Power blackout hits Victoria Island exactly as predicted.",
-            dateString: "October 15, 02:56",
-            orderIndex: 2,
-          },
-        ],
-      },
-      researchFolders: {
-        create: [
-          {
-            name: "AI & Neural Networks",
-          },
-          {
-            name: "Lagos Urban Lore & Locations",
-          },
-        ],
-      },
-      notes: {
-        create: [
-          {
-            title: "Key Dialogue Reminder for Chapter 2",
-            content: "Make sure Sarah challenges Kaelen about why he didn't go to the authorities first.",
-            color: "amber",
-            tags: "dialogue, sarah, kaelen",
-          },
-        ],
-      },
-      activityLogs: {
-        create: [
-          { userId: isaiah.id, action: "PROJECT_CREATED", details: "Created project blueprint for The Last Horizon." },
-          { userId: isaiah.id, action: "CHAPTER_COMPLETED", details: "Marked Chapter 1 as Completed (3,200 words)." },
-          { userId: sarah.id, action: "JOINED_PROJECT", details: "Joined as Co-Author." },
-        ],
-      },
     },
   });
 
   // Create Book Gallery Showcase Item for The Last Horizon
-  await prisma.bookGalleryItem.create({
+  const galleryBook = await prisma.bookGalleryItem.create({
     data: {
       projectId: novel.id,
+      slug: novelSlug,
       title: novel.title,
       subtitle: novel.subtitle,
       author: novel.authorName,
@@ -246,16 +224,41 @@ async function main() {
       coverImage: novel.coverImage,
       tags: "Cyberpunk, AI, Lagos, Thriller, Speculative",
       visibility: "PUBLIC",
+      allowComments: true,
       isFeatured: true,
+      featuredAt: new Date(),
       likesCount: 142,
       viewsCount: 1250,
     },
   });
 
-  // 3. Poetry Collection: Whispers of the Savannah
+  // 4. Comments
+  const firstChapter = await prisma.chapter.findFirst({ where: { projectId: novel.id } });
+  if (firstChapter) {
+    await prisma.comment.create({
+      data: {
+        projectId: novel.id,
+        chapterId: firstChapter.id,
+        userId: readerOne.id,
+        text: "The tension in this opening scene is phenomenal! The Lagos setting feels electric.",
+      },
+    });
+    await prisma.comment.create({
+      data: {
+        projectId: novel.id,
+        chapterId: firstChapter.id,
+        userId: sarah.id,
+        text: "Pacing on paragraph 3 is spot on. Kaelen's motivation shines right away.",
+      },
+    });
+  }
+
+  // 5. Poetry Collection: Whispers of the Savannah
+  const poetrySlug = slugify("Whispers of the Savannah");
   const poetry = await prisma.project.create({
     data: {
       title: "Whispers of the Savannah",
+      slug: poetrySlug,
       subtitle: "Verses on Memory and Land",
       authorName: sarah.name,
       ownerId: sarah.id,
@@ -267,7 +270,10 @@ async function main() {
       wordCountTarget: 15000,
       currentWordCount: 4200,
       status: "IN_PROGRESS",
-      visibility: "OPEN",
+      visibility: "PUBLIC",
+      allowComments: true,
+      isFeatured: true,
+      featuredAt: new Date(),
       coverImage: "https://images.unsplash.com/photo-1516541196182-6bdb0516ed27?auto=format&fit=crop&q=80&w=600",
       premise: "An evocative collection of poems capturing ancestral memory, urban transition, and nature's quiet resilience.",
       logline: "Poetry that bridge modern cityscape rhythms with ancient earth melodies.",
@@ -276,6 +282,7 @@ async function main() {
         create: [
           {
             title: "Movement I: Sunrise & Red Clay",
+            slug: slugify("Movement I Sunrise Red Clay"),
             objective: "Establish the ancestral motifs and imagery of morning light over the land.",
             summary: "Opening free-verse and sonnet selections.",
             orderIndex: 1,
@@ -291,6 +298,7 @@ async function main() {
   await prisma.bookGalleryItem.create({
     data: {
       projectId: poetry.id,
+      slug: poetrySlug,
       title: poetry.title,
       subtitle: poetry.subtitle,
       author: poetry.authorName,
@@ -299,10 +307,53 @@ async function main() {
       coverImage: poetry.coverImage,
       tags: "Poetry, Spoken Word, African Verse, Memory",
       visibility: "PUBLIC",
+      allowComments: true,
       isFeatured: true,
+      featuredAt: new Date(),
       likesCount: 89,
       viewsCount: 840,
     },
+  });
+
+  // 6. System Settings Initialization
+  const defaultSettings = [
+    { key: "site_name", value: JSON.stringify("INKORA") },
+    { key: "site_description", value: JSON.stringify("Where ideas become stories. AI Writing Studio & Book Creation Workspace.") },
+    { key: "registration_enabled", value: JSON.stringify(true) },
+    { key: "public_reading_enabled", value: JSON.stringify(true) },
+    { key: "comments_enabled", value: JSON.stringify(true) },
+    { key: "writer_collaboration_enabled", value: JSON.stringify(true) },
+    { key: "maintenance_mode", value: JSON.stringify(false) },
+    { key: "default_theme", value: JSON.stringify("system") },
+  ];
+
+  for (const s of defaultSettings) {
+    await prisma.systemSettings.upsert({
+      where: { key: s.key },
+      update: { value: s.value },
+      create: s,
+    });
+  }
+
+  // 7. Initial Activity Logs
+  await prisma.activityLog.createMany({
+    data: [
+      {
+        actorId: adminUser.id,
+        actorRole: "ADMIN",
+        action: "SYSTEM_INITIALIZED",
+        details: "Platform database initialized and admin account created.",
+        targetType: "SYSTEM",
+      },
+      {
+        actorId: isaiah.id,
+        actorRole: "WRITER",
+        action: "BOOK_PUBLISHED",
+        details: "Published 'The Last Horizon' to Public Gallery.",
+        targetType: "BOOK",
+        targetId: novel.id,
+      },
+    ],
   });
 
   console.log("Database seeded successfully!");
@@ -316,3 +367,4 @@ main()
   .finally(async () => {
     await prisma.$disconnect();
   });
+

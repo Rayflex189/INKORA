@@ -1,6 +1,6 @@
 datasource db {
   provider = "sqlite"
-  url      = "file:./dev.db"
+  url      = env("DATABASE_URL")
 }
 
 generator client {
@@ -8,18 +8,22 @@ generator client {
 }
 
 model User {
-  id           String   @id @default(uuid())
-  email        String   @unique
-  username     String   @unique
-  name         String
-  passwordHash String
-  avatar       String?
-  bio          String?
-  genres       String?  // comma separated or JSON string
-  interests    String?  // comma separated
-  role         String   @default("USER") // USER, ADMIN
-  createdAt    DateTime @default(now())
-  updatedAt    DateTime @updatedAt
+  id                 String    @id @default(uuid())
+  email              String    @unique
+  username           String    @unique
+  name               String
+  passwordHash       String
+  avatar             String?
+  bio                String?
+  genres             String?   // comma separated or JSON string
+  interests          String?   // comma separated
+  role               String    @default("READER") // ADMIN, WRITER, READER
+  status             String    @default("ACTIVE") // ACTIVE, SUSPENDED
+  mustChangePassword Boolean   @default(false)
+  isFeatured         Boolean   @default(false)
+  lastActive         DateTime  @default(now())
+  createdAt          DateTime  @default(now())
+  updatedAt          DateTime  @updatedAt
 
   profile             Profile?
   projects            Project[]             @relation("ProjectOwner")
@@ -39,6 +43,10 @@ model User {
   following           Follower[]            @relation("Follower")
   ownedTeams          Team[]                @relation("TeamOwner")
   teamMemberships     TeamMember[]
+  reportsSubmitted    Report[]              @relation("ReportReporter")
+  reportsResolved     Report[]              @relation("ReportResolver")
+  bookmarks           Bookmark[]
+  readingProgress     ReadingProgress[]
 }
 
 model Profile {
@@ -52,32 +60,36 @@ model Profile {
 }
 
 model Project {
-  id                String   @id @default(uuid())
-  title             String
-  subtitle          String?
-  authorName        String
-  ownerId           String
-  category          String   // Books, Creative Writing, Screen & Stage, Professional Writing, Academic, Other
-  type              String   // Novel, Short Story, Poetry, Screenplay, Memoir, Essay, etc.
-  genre             String?
-  subgenre          String?
-  targetAudience    String?
-  ageGroup          String?
-  wordCountTarget   Int      @default(50000)
-  currentWordCount  Int      @default(0)
-  status            String   @default("IN_PROGRESS") // DRAFT, IN_PROGRESS, COMPLETED, ARCHIVED
-  visibility        String   @default("PRIVATE") // PRIVATE, INVITE_ONLY, OPEN
-  allowCollaborators Boolean @default(false)
-  maxCollaborators  Int      @default(5)
-  coverImage        String?
-  premise           String?
-  logline           String?
-  concept           String?
-  theme             String?
-  tone              String?
-  structureTemplate String   @default("Three Act Structure")
-  createdAt         DateTime @default(now())
-  updatedAt         DateTime @updatedAt
+  id                 String   @id @default(uuid())
+  title              String
+  slug               String?  @unique
+  subtitle           String?
+  authorName         String
+  ownerId            String
+  category           String   // Books, Creative Writing, Screen & Stage, Professional Writing, Academic, Other
+  type               String   // Novel, Short Story, Poetry, Screenplay, Memoir, Essay, etc.
+  genre              String?
+  subgenre           String?
+  targetAudience     String?
+  ageGroup           String?
+  wordCountTarget    Int      @default(50000)
+  currentWordCount   Int      @default(0)
+  status             String   @default("IN_PROGRESS") // DRAFT, IN_PROGRESS, COMPLETED, ARCHIVED
+  visibility         String   @default("PRIVATE") // PRIVATE, INVITE_ONLY, OPEN, PUBLIC
+  allowCollaborators Boolean  @default(false)
+  maxCollaborators   Int      @default(5)
+  allowComments      Boolean  @default(true)
+  isFeatured         Boolean  @default(false)
+  featuredAt         DateTime?
+  coverImage         String?
+  premise            String?
+  logline            String?
+  concept            String?
+  theme              String?
+  tone               String?
+  structureTemplate  String   @default("Three Act Structure")
+  createdAt          DateTime @default(now())
+  updatedAt          DateTime @updatedAt
 
   owner               User                @relation("ProjectOwner", fields: [ownerId], references: [id], onDelete: Cascade)
   members             ProjectMember[]
@@ -145,6 +157,7 @@ model Chapter {
   id         String   @id @default(uuid())
   projectId  String
   title      String
+  slug       String?
   objective  String?
   summary    String?
   orderIndex Int      @default(0)
@@ -163,23 +176,23 @@ model Chapter {
 }
 
 model Character {
-  id           String   @id @default(uuid())
-  projectId    String
-  name         String
-  age          String?
-  role         String?  // Protagonist, Antagonist, Supporting, Mentor
-  appearance   String?
-  personality  String?
-  background   String?
-  arc          String?
-  strengths    String?
-  weaknesses   String?
-  goals        String?
-  motivations  String?
-  fears        String?
-  secrets      String?
+  id            String   @id @default(uuid())
+  projectId     String
+  name          String
+  age           String?
+  role          String?  // Protagonist, Antagonist, Supporting, Mentor
+  appearance    String?
+  personality   String?
+  background    String?
+  arc           String?
+  strengths     String?
+  weaknesses    String?
+  goals         String?
+  motivations   String?
+  fears         String?
+  secrets       String?
   relationships String?
-  createdAt    DateTime @default(now())
+  createdAt     DateTime @default(now())
 
   project Project @relation(fields: [projectId], references: [id], onDelete: Cascade)
 }
@@ -297,6 +310,7 @@ model Comment {
   selectedText String?
   text         String
   resolved     Boolean  @default(false)
+  isReported   Boolean  @default(false)
   createdAt    DateTime @default(now())
 
   project Project @relation(fields: [projectId], references: [id], onDelete: Cascade)
@@ -357,20 +371,28 @@ model Message {
 }
 
 model ActivityLog {
-  id        String   @id @default(uuid())
-  projectId String
-  userId    String
-  action    String
-  details   String?
-  createdAt DateTime @default(now())
+  id         String   @id @default(uuid())
+  projectId  String?
+  userId     String?
+  actorId    String?
+  actorRole  String?
+  action     String
+  targetType String?
+  targetId   String?
+  details    String?
+  ipAddress  String?
+  userAgent  String?
+  metadata   String?  // JSON string
+  createdAt  DateTime @default(now())
 
-  project Project @relation(fields: [projectId], references: [id], onDelete: Cascade)
-  user    User    @relation(fields: [userId], references: [id], onDelete: Cascade)
+  project Project? @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  user    User?    @relation(fields: [userId], references: [id], onDelete: Cascade)
 }
 
 model BookGalleryItem {
   id          String    @id @default(uuid())
   projectId   String    @unique
+  slug        String?   @unique
   coverImage  String?
   title       String
   subtitle    String?
@@ -379,13 +401,17 @@ model BookGalleryItem {
   genre       String
   tags        String?
   visibility  String    @default("PUBLIC") // PUBLIC, UNLISTED
+  allowComments Boolean @default(true)
   isFeatured  Boolean   @default(false)
+  featuredAt  DateTime?
   likesCount  Int       @default(0)
   viewsCount  Int       @default(0)
   publishedAt DateTime  @default(now())
 
   project      Project           @relation(fields: [projectId], references: [id], onDelete: Cascade)
   interactions BookInteraction[]
+  bookmarks    Bookmark[]
+  readingProgress ReadingProgress[]
 }
 
 model BookInteraction {
@@ -399,6 +425,32 @@ model BookInteraction {
 
   book BookGalleryItem @relation(fields: [bookId], references: [id], onDelete: Cascade)
   user User            @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+model Bookmark {
+  id        String   @id @default(uuid())
+  userId    String
+  bookId    String
+  createdAt DateTime @default(now())
+
+  user User            @relation(fields: [userId], references: [id], onDelete: Cascade)
+  book BookGalleryItem @relation(fields: [bookId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, bookId])
+}
+
+model ReadingProgress {
+  id              String   @id @default(uuid())
+  userId          String
+  bookId          String
+  chapterId       String?
+  progressPercent Float    @default(0)
+  updatedAt       DateTime @updatedAt
+
+  user User            @relation(fields: [userId], references: [id], onDelete: Cascade)
+  book BookGalleryItem @relation(fields: [bookId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, bookId])
 }
 
 model Follower {
@@ -437,8 +489,33 @@ model TeamMember {
   @@unique([teamId, userId])
 }
 
+model Report {
+  id              String   @id @default(uuid())
+  reporterId      String
+  targetType      String   // BOOK, COMMENT, PROFILE, COMMUNITY_POST, PROJECT
+  targetId        String
+  reason          String
+  description     String?
+  status          String   @default("PENDING") // PENDING, UNDER_REVIEW, RESOLVED, DISMISSED
+  resolutionNotes String?
+  resolvedById    String?
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  reporter User  @relation("ReportReporter", fields: [reporterId], references: [id], onDelete: Cascade)
+  resolvedBy User? @relation("ReportResolver", fields: [resolvedById], references: [id], onDelete: SetNull)
+}
+
+model SystemSettings {
+  id        String   @id @default(uuid())
+  key       String   @unique
+  value     String   // JSON formatted string
+  updatedAt DateTime @updatedAt
+}
+
 model AdminConfig {
   id    String @id @default(uuid())
   key   String @unique
   value String
 }
+

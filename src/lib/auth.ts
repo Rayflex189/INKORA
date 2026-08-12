@@ -11,6 +11,8 @@ export interface SessionUser {
   username: string;
   name: string;
   role: string;
+  status?: string;
+  mustChangePassword?: boolean;
 }
 
 export async function hashPassword(password: string): Promise<string> {
@@ -23,7 +25,15 @@ export async function comparePassword(password: string, hash: string): Promise<b
 
 export function signToken(user: SessionUser): string {
   return jwt.sign(
-    { id: user.id, email: user.email, username: user.username, name: user.name, role: user.role },
+    {
+      id: user.id,
+      email: user.email,
+      username: user.username,
+      name: user.name,
+      role: user.role,
+      status: user.status,
+      mustChangePassword: user.mustChangePassword,
+    },
     JWT_SECRET,
     { expiresIn: "7d" }
   );
@@ -45,11 +55,22 @@ export async function getCurrentUser(): Promise<SessionUser | null> {
   const decoded = verifyToken(token);
   if (!decoded) return null;
 
-  // Optionally verify user exists in DB
+  // Verify user exists in DB & isn't suspended
   const user = await db.user.findUnique({
     where: { id: decoded.id },
-    select: { id: true, email: true, username: true, name: true, role: true },
+    select: {
+      id: true,
+      email: true,
+      username: true,
+      name: true,
+      role: true,
+      status: true,
+      mustChangePassword: true,
+    },
   });
+
+  if (!user || user.status === "SUSPENDED") return null;
 
   return user;
 }
+
