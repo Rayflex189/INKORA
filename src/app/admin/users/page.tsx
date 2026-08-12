@@ -91,16 +91,89 @@ export default function AdminUsersPage() {
 
       {/* Users Table */}
       <div className="rounded-3xl border border-border bg-card overflow-hidden shadow-xs">
-        <div className="overflow-x-auto">
+        {/* Mobile Card List View */}
+        <div className="block md:hidden space-y-4 p-4">
+          {loading ? (
+            <div className="py-8 text-center text-xs text-muted-foreground">Loading users...</div>
+          ) : users.length === 0 ? (
+            <div className="py-8 text-center text-xs text-muted-foreground">No users matching search query.</div>
+          ) : (
+            users.map((u) => (
+              <div key={u.id} className="rounded-2xl border border-border bg-card p-4 space-y-3 shadow-xs">
+                <div className="flex items-start justify-between gap-2">
+                  <div>
+                    <div className="font-bold text-sm text-foreground flex items-center gap-1.5 flex-wrap">
+                      <span>{u.name}</span>
+                      {u.isFeatured && (
+                        <span className="rounded-full bg-amber-500/10 px-2 py-0.5 text-[9px] font-extrabold text-amber-600 dark:text-amber-400 uppercase">
+                          Featured
+                        </span>
+                      )}
+                    </div>
+                    <p className="text-xs text-muted-foreground">@{u.username} • {u.email}</p>
+                  </div>
+                  <span className={`inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-[9px] font-extrabold uppercase ${
+                    u.status === "SUSPENDED" ? "bg-red-500/10 text-red-600 dark:text-red-400" : "bg-emerald-500/10 text-emerald-600 dark:text-emerald-400"
+                  }`}>
+                    {u.status}
+                  </span>
+                </div>
+
+                <div className="flex items-center justify-between text-xs text-muted-foreground pt-2 border-t border-border">
+                  <span>Role: <strong>{u.role}</strong></span>
+                  <span>{u._count?.projects || 0} Projects • {u._count?.comments || 0} Comments</span>
+                </div>
+
+                <div className="flex flex-wrap items-center gap-2 pt-2 border-t border-border">
+                  <select
+                    value={u.role}
+                    onChange={(e) => handleAction(u.id, "change_role", { role: e.target.value })}
+                    className="rounded-xl border border-border bg-background px-2 py-1 text-xs font-bold"
+                  >
+                    <option value="READER">READER</option>
+                    <option value="WRITER">WRITER</option>
+                    <option value="ADMIN">ADMIN</option>
+                  </select>
+
+                  {u.status === "ACTIVE" ? (
+                    <button
+                      onClick={() => handleAction(u.id, "suspend")}
+                      className="rounded-xl bg-red-500/10 text-red-600 dark:text-red-400 px-3 py-1 text-xs font-bold"
+                    >
+                      Suspend
+                    </button>
+                  ) : (
+                    <button
+                      onClick={() => handleAction(u.id, "reactivate")}
+                      className="rounded-xl bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 px-3 py-1 text-xs font-bold"
+                    >
+                      Reactivate
+                    </button>
+                  )}
+
+                  <button
+                    onClick={() => handleAction(u.id, "delete_user")}
+                    className="rounded-xl border border-red-500/30 text-red-500 px-3 py-1 text-xs font-bold"
+                  >
+                    Delete
+                  </button>
+                </div>
+              </div>
+            ))
+          )}
+        </div>
+
+        {/* Desktop Table View */}
+        <div className="hidden md:block overflow-x-auto">
           <table className="w-full text-left text-xs">
-            <thead className="bg-muted/40 border-b border-border text-muted-foreground uppercase font-bold text-[10px] tracking-wider">
+            <thead className="bg-muted/50 border-b border-border text-muted-foreground uppercase tracking-wider font-extrabold text-[10px]">
               <tr>
-                <th className="px-6 py-4">User</th>
-                <th className="px-6 py-4">Role</th>
-                <th className="px-6 py-4">Status</th>
-                <th className="px-6 py-4">Projects / Comments</th>
-                <th className="px-6 py-4">Joined</th>
-                <th className="px-6 py-4 text-right">Actions</th>
+                <th className="px-6 py-3.5">User</th>
+                <th className="px-6 py-3.5">Role</th>
+                <th className="px-6 py-3.5">Status</th>
+                <th className="px-6 py-3.5">Activity</th>
+                <th className="px-6 py-3.5">Joined</th>
+                <th className="px-6 py-3.5 text-right">Actions</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-border">
@@ -190,8 +263,8 @@ export default function AdminUsersPage() {
                           </button>
                         )}
                         <button
-                          onClick={() => handleAction(u.id, "delete")}
-                          className="rounded-lg border border-border p-1.5 text-red-500 hover:bg-red-500/10"
+                          onClick={() => handleAction(u.id, "delete_user")}
+                          className="rounded-lg border border-red-500/30 text-red-500 p-1.5 hover:bg-red-500/10"
                           title="Delete User"
                         >
                           <Trash2 className="h-4 w-4" />

@@ -122,17 +122,17 @@ export default function ProjectWizardPage() {
   return (
     <div className="mx-auto max-w-5xl px-4 py-8 sm:px-6 lg:px-8 space-y-8">
       {/* Wizard Progress Bar */}
-      <div className="flex items-center justify-between border-b border-border pb-6">
+      <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 border-b border-border pb-6">
         <div>
-          <h1 className="font-serif text-3xl font-extrabold">Project Creation Wizard</h1>
-          <p className="text-sm text-muted-foreground mt-1">
+          <h1 className="font-serif text-2xl sm:text-3xl font-extrabold">Project Creation Wizard</h1>
+          <p className="text-xs sm:text-sm text-muted-foreground mt-1">
             {step === 1 && "Step 1 — Choose what type of work you are creating"}
             {step === 2 && "Step 2 — Define your story vision & project details"}
             {step === 3 && "Step 3 — Review and accept your custom Project Blueprint"}
           </p>
         </div>
 
-        <div className="flex items-center gap-2">
+        <div className="flex items-center gap-2 self-end sm:self-auto">
           <div className={`flex h-8 w-8 items-center justify-center rounded-full text-xs font-bold ${step >= 1 ? "bg-primary text-white" : "bg-muted text-muted-foreground"}`}>1</div>
           <div className="h-0.5 w-6 bg-border" />
           <div className={`flex h-8 w-8 items-center justify-center rounded-full text-xs font-bold ${step >= 2 ? "bg-primary text-white" : "bg-muted text-muted-foreground"}`}>2</div>

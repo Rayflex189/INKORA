@@ -63,10 +63,10 @@ export default async function DashboardPage() {
             What are you creating today? Turn your structure into a finished manuscript.
           </p>
 
-          <div className="pt-4 flex flex-wrap items-center gap-3">
+          <div className="pt-4 flex flex-col sm:flex-row items-stretch sm:items-center gap-3">
             <Link
               href="/projects/new"
-              className="inline-flex items-center gap-2 rounded-xl bg-amber-500 px-5 py-3 text-sm font-bold text-slate-950 shadow-lg shadow-amber-500/20 hover:bg-amber-400 hover:scale-[1.02] transition-all"
+              className="inline-flex items-center justify-center gap-2 rounded-xl bg-amber-500 px-5 py-3 text-sm font-bold text-slate-950 shadow-lg shadow-amber-500/20 hover:bg-amber-400 hover:scale-[1.02] transition-all"
             >
               <PlusCircle className="h-4 w-4" />
               <span>Create New Project</span>
@@ -75,10 +75,10 @@ export default async function DashboardPage() {
             {recentProject && (
               <Link
                 href={`/projects/${recentProject.id}`}
-                className="inline-flex items-center gap-2 rounded-xl bg-white/10 px-5 py-3 text-sm font-semibold text-white hover:bg-white/20 backdrop-blur-md transition-all"
+                className="inline-flex items-center justify-center gap-2 rounded-xl bg-white/10 px-5 py-3 text-sm font-semibold text-white hover:bg-white/20 backdrop-blur-md transition-all"
               >
                 <BookOpen className="h-4 w-4" />
-                <span>Continue: {recentProject.title}</span>
+                <span className="truncate">Continue: {recentProject.title}</span>
               </Link>
             )}
           </div>

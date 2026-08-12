@@ -15,14 +15,18 @@ function slugify(text: string): string {
 async function main() {
   console.log("Seeding INKORA database...");
 
-  // Clean existing non-user data to allow idempotent re-seeding
-  await prisma.activityLog.deleteMany({});
-  await prisma.report.deleteMany({});
-  await prisma.comment.deleteMany({});
-  await prisma.bookGalleryItem.deleteMany({});
-  await prisma.chapter.deleteMany({});
-  await prisma.projectMember.deleteMany({});
-  await prisma.project.deleteMany({});
+  // Clean existing non-user data safely to allow idempotent re-seeding
+  try {
+    await prisma.activityLog.deleteMany({});
+    await prisma.report.deleteMany({});
+    await prisma.comment.deleteMany({});
+    await prisma.bookGalleryItem.deleteMany({});
+    await prisma.chapter.deleteMany({});
+    await prisma.projectMember.deleteMany({});
+    await prisma.project.deleteMany({});
+  } catch (err) {
+    console.log("Cleanup skipped for fresh tables.");
+  }
 
   const adminUsername = process.env.ADMIN_USERNAME || "admin";
   const adminPassword = process.env.ADMIN_PASSWORD || "adminplus";

@@ -2,6 +2,7 @@ import "./globals.css";
 import React from "react";
 import { ThemeProvider } from "@/components/ThemeProvider";
 import { Header } from "@/components/layout/Header";
+import { MobileNav } from "@/components/layout/MobileNav";
 import { getCurrentUser } from "@/lib/auth";
 import { PwaInstallPrompt } from "@/components/pwa/PwaInstallPrompt";
 
@@ -24,7 +25,8 @@ export default async function RootLayout({ children }: { children: React.ReactNo
         <ThemeProvider>
           <div className="relative flex min-h-screen flex-col">
             <Header user={user} />
-            <main className="flex-1">{children}</main>
+            <main className="flex-1 pb-16 md:pb-0">{children}</main>
+            <MobileNav user={user} />
             <PwaInstallPrompt />
           </div>
         </ThemeProvider>

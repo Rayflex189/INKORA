@@ -18,7 +18,9 @@ import {
   Compass,
   Shield,
   ChevronDown,
+  Menu,
 } from "lucide-react";
+import { MobileDrawer } from "@/components/layout/MobileDrawer";
 
 interface HeaderProps {
   user?: {
@@ -36,6 +38,7 @@ export function Header({ user }: HeaderProps) {
   const { theme, setTheme } = useTheme();
   const [showProfileMenu, setShowProfileMenu] = useState(false);
   const [showThemeMenu, setShowThemeMenu] = useState(false);
+  const [showMobileDrawer, setShowMobileDrawer] = useState(false);
   const [mounted, setMounted] = useState(false);
 
   React.useEffect(() => {
@@ -76,7 +79,15 @@ export function Header({ user }: HeaderProps) {
     <header className="sticky top-0 z-40 w-full border-b border-border bg-card/80 backdrop-blur-md transition-colors">
       <div className="mx-auto flex h-16 max-w-7xl items-center justify-between px-4 sm:px-6 lg:px-8">
         {/* Brand */}
-        <div className="flex items-center gap-8">
+        <div className="flex items-center gap-3 md:gap-8">
+          <button
+            onClick={() => setShowMobileDrawer(true)}
+            className="flex h-9 w-9 items-center justify-center rounded-lg border border-border bg-card text-muted-foreground hover:text-foreground md:hidden"
+            aria-label="Open mobile navigation menu"
+          >
+            <Menu className="h-5 w-5" />
+          </button>
+
           <Link href={user ? "/dashboard" : "/"} className="flex items-center gap-2.5 group">
             <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-gradient-to-tr from-indigo-600 to-amber-500 text-white shadow-md shadow-indigo-500/20 group-hover:scale-105 transition-transform">
               <Feather className="h-5 w-5" />
@@ -218,6 +229,8 @@ export function Header({ user }: HeaderProps) {
           )}
         </div>
       </div>
+
+      <MobileDrawer isOpen={showMobileDrawer} onClose={() => setShowMobileDrawer(false)} user={user} />
     </header>
   );
 }

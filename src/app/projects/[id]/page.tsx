@@ -5,6 +5,8 @@ import { useParams, useRouter } from "next/navigation";
 import { StudioSidebar } from "@/components/layout/StudioSidebar";
 import { TipTapEditor } from "@/components/editor/TipTapEditor";
 import { AIAssistantInspector } from "@/components/ai/AIAssistantInspector";
+import { MobileEditorToolbar } from "@/components/editor/MobileEditorToolbar";
+import { MobileAiBottomSheet } from "@/components/editor/MobileAiBottomSheet";
 import {
   generatePlainTextExport,
   generateMarkdownExport,
@@ -47,6 +49,7 @@ export default function StudioWorkspacePage() {
   const [newLocName, setNewLocName] = useState("");
   const [newLocDesc, setNewLocDesc] = useState("");
   const [newInviteUsername, setNewInviteUsername] = useState("");
+  const [showMobileAiSheet, setShowMobileAiSheet] = useState(false);
 
   // Chat message state
   const [chatMessages, setChatMessages] = useState<any[]>([]);
@@ -220,7 +223,7 @@ export default function StudioWorkspacePage() {
   }
 
   return (
-    <div className={`flex h-[calc(100vh-4rem)] w-full overflow-hidden bg-background ${isFocusMode ? "fixed inset-0 z-50 bg-background" : ""}`}>
+    <div className={`flex flex-col md:flex-row h-[calc(100vh-4rem)] w-full overflow-hidden bg-background ${isFocusMode ? "fixed inset-0 z-50 bg-background p-2 sm:p-6" : ""}`}>
       {/* LEFT SIDEBAR NAVIGATION */}
       {!isFocusMode && (
         <StudioSidebar
@@ -512,6 +515,19 @@ export default function StudioWorkspacePage() {
           </div>
         )}
       </div>
+
+      {activeView === "editor" && (
+        <MobileEditorToolbar
+          onOpenAiSheet={() => setShowMobileAiSheet(true)}
+          onToggleFocusMode={() => setIsFocusMode(!isFocusMode)}
+          isFocusMode={isFocusMode}
+        />
+      )}
+
+      <MobileAiBottomSheet
+        isOpen={showMobileAiSheet}
+        onClose={() => setShowMobileAiSheet(false)}
+      />
     </div>
   );
 }

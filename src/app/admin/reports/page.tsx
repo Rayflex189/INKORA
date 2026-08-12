@@ -54,12 +54,12 @@ export default function AdminModerationCenterPage() {
         </div>
 
         {/* Filter Status Tabs */}
-        <div className="flex items-center gap-1 rounded-2xl border border-border bg-card p-1.5 text-xs font-semibold">
+        <div className="flex items-center gap-1 rounded-2xl border border-border bg-card p-1.5 text-xs font-semibold overflow-x-auto no-scrollbar max-w-full">
           {["ALL", "PENDING", "UNDER_REVIEW", "RESOLVED", "DISMISSED"].map((st) => (
             <button
               key={st}
               onClick={() => setFilterStatus(st)}
-              className={`rounded-xl px-3 py-1.5 transition-colors ${
+              className={`shrink-0 rounded-xl px-3 py-1.5 transition-colors ${
                 filterStatus === st ? "bg-primary text-white" : "text-muted-foreground hover:bg-muted"
               }`}
             >
