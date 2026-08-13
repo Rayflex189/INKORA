@@ -215,16 +215,11 @@ export function Header({ user }: HeaderProps) {
             <div className="flex items-center gap-2">
               <Link
                 href="/login"
-                className="px-4 py-2 text-sm font-medium text-muted-foreground hover:text-foreground transition-colors"
-              >
+                className="rounded-xl bg-primary px-4 py-2 text-sm font-semibold text-white hover:bg-primary-hover transition-colors shadow-md shadow-primary/20"
+                >
                 Sign In
               </Link>
-              <Link
-                href="/register"
-                className="rounded-xl bg-primary px-4 py-2 text-sm font-semibold text-white hover:bg-primary-hover transition-colors shadow-md shadow-primary/20"
-              >
-                Get Started
-              </Link>
+              
             </div>
           )}
         </div>
