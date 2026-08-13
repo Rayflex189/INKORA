@@ -124,12 +124,7 @@ export function MobileDrawer({ isOpen, onClose, user }: MobileDrawerProps) {
             >
               Sign In
             </Link>
-            <Link
-              href="/register"
-              className="block w-full text-center rounded-xl border border-border py-2 text-xs font-bold text-foreground"
-            >
-              Create Account
-            </Link>
+            
           </div>
         )}
 
